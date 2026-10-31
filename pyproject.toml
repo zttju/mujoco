@@ -13,6 +13,19 @@ dependencies = [
   "numpy>=1.24",
 ]
 
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+]
+train = [
+  "stable-baselines3>=2.2",
+  "torch>=2.2",
+  "tensorboard>=2.16",
+]
+
+[tool.setuptools.package-data]
+"mujoco_rl.envs" = ["assets/*.xml"]
+
 
 [tool.setuptools.packages.find]
 include = ["mujoco_rl*"]

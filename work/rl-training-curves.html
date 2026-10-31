@@ -1,0 +1,182 @@
+<div id="rl-training-curves" class="rl-curves">
+  <svg id="reward-chart" class="rl-chart" viewBox="0 0 640 250" role="img" aria-labelledby="reward-title reward-desc"></svg>
+  <svg id="success-chart" class="rl-chart" viewBox="0 0 320 250" role="img" aria-labelledby="success-title success-desc"></svg>
+</div>
+
+<style scoped>
+#rl-training-curves {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: end;
+  color: var(--color-foreground, #111827);
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+#rl-training-curves .rl-chart {
+  width: 100%;
+  height: auto;
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, currentColor 3%, transparent);
+}
+
+#rl-training-curves .axis {
+  stroke: color-mix(in srgb, currentColor 28%, transparent);
+  stroke-width: 1;
+}
+
+#rl-training-curves .grid {
+  stroke: color-mix(in srgb, currentColor 9%, transparent);
+}
+
+#rl-training-curves text {
+  fill: currentColor;
+  font-size: 11px;
+}
+
+#rl-training-curves .title {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+#rl-training-curves .reward-line {
+  fill: none;
+  stroke: #2563eb;
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+
+#rl-training-curves .reward-dot {
+  fill: #2563eb;
+}
+
+#rl-training-curves .success-line {
+  fill: none;
+  stroke: #059669;
+  stroke-width: 2;
+}
+
+#rl-training-curves .success-dot {
+  fill: #059669;
+}
+
+#rl-training-curves .focus-dot {
+  fill: #dc2626;
+}
+
+@media (max-width: 700px) {
+  #rl-training-curves {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+
+<script>
+(() => {
+  const root = document.getElementById("rl-training-curves");
+  if (!root) return;
+
+  const rewardChart = document.getElementById("reward-chart");
+  const successChart = document.getElementById("success-chart");
+  const timesteps = [100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100, 1200, 1300, 1400, 1500];
+  const rewards = [-18.1, -55.3, -66.1, -110.1, -86.4, -93.2, -90.1, -77.4, -95.8, -70.4, -38.6, -78.8, -82.5, -68.7, -95.2];
+  const success = [50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+  const namespace = "http://www.w3.org/2000/svg";
+  const draw = (svg, values, yMin, yMax, yTicks, title, description, lineClass, dotClass) => {
+    svg.setAttribute("aria-labelledby", `${title.id} ${description.id}`);
+    const padding = {top: 34, right: 18, bottom: 44, left: 56};
+    const width = Number(svg.getAttribute("viewBox").split(" ")[2]);
+    const height = Number(svg.getAttribute("viewBox").split(" ")[3]);
+    const plotWidth = width - padding.left - padding.right;
+    const plotHeight = height - padding.top - padding.bottom;
+    const x = value => padding.left + (value - timesteps[0]) / (timesteps.at(-1) - timesteps[0]) * plotWidth;
+    const y = value => padding.top + (yMax - value) / (yMax - yMin) * plotHeight;
+    const titleNode = document.createElementNS(namespace, "title");
+    const descriptionNode = document.createElementNS(namespace, "desc");
+    titleNode.id = title.id;
+    titleNode.textContent = title.label;
+    descriptionNode.id = description.id;
+    descriptionNode.textContent = description.text;
+    svg.append(titleNode, descriptionNode);
+
+    yTicks.forEach(value => {
+      svg.append(Object.assign(document.createElementNS(namespace, "line"), {
+        x1: padding.left, x2: width - padding.right, y1: y(value), y2: y(value), class: "grid"
+      }));
+      const label = document.createElementNS(namespace, "text");
+      label.setAttribute("x", padding.left - 8);
+      label.setAttribute("y", y(value) + 4);
+      label.setAttribute("text-anchor", "end");
+      label.textContent = value.toLocaleString();
+      svg.append(label);
+    });
+
+    [100, 800, 1500].forEach(value => {
+      const label = document.createElementNS(namespace, "text");
+      label.setAttribute("x", x(value));
+      label.setAttribute("y", height - 18);
+      label.setAttribute("text-anchor", "middle");
+      label.textContent = value.toLocaleString();
+      svg.append(label);
+    });
+
+    const xAxisLabel = document.createElementNS(namespace, "text");
+    xAxisLabel.setAttribute("x", padding.left + plotWidth / 2);
+    xAxisLabel.setAttribute("y", height - 4);
+    xAxisLabel.setAttribute("text-anchor", "middle");
+    xAxisLabel.textContent = "训练步数";
+    svg.append(xAxisLabel);
+
+    const chartTitle = document.createElementNS(namespace, "text");
+    chartTitle.setAttribute("x", padding.left);
+    chartTitle.setAttribute("y", 20);
+    chartTitle.setAttribute("class", "title");
+    chartTitle.textContent = description.label;
+    svg.append(chartTitle);
+
+    svg.append(Object.assign(document.createElementNS(namespace, "line"), {
+      x1: padding.left, x2: padding.left, y1: padding.top, y2: height - padding.bottom, class: "axis"
+    }));
+    svg.append(Object.assign(document.createElementNS(namespace, "line"), {
+      x1: padding.left, x2: width - padding.right, y1: height - padding.bottom, y2: height - padding.bottom, class: "axis"
+    }));
+
+    const path = document.createElementNS(namespace, "path");
+    path.setAttribute("d", values.map((value, index) => `${index ? "L" : "M"}${x(timesteps[index])},${y(value)}`).join(""));
+    path.setAttribute("class", lineClass);
+    svg.append(path);
+
+    values.forEach((value, index) => {
+      const dot = document.createElementNS(namespace, "circle");
+      dot.setAttribute("cx", x(timesteps[index]));
+      dot.setAttribute("cy", y(value));
+      dot.setAttribute("r", index === 0 ? 5 : 4);
+      dot.setAttribute("class", dotClass);
+      dot.setAttribute("tabindex", "0");
+      dot.setAttribute("role", "button");
+      dot.setAttribute("aria-label", `${timesteps[index]} 步：${description.valuePrefix}${value.toLocaleString()}${description.valueSuffix}`);
+      dot.setAttribute("data-tooltip", `${timesteps[index]} 步\n${description.valuePrefix}${value.toLocaleString()}${description.valueSuffix}`);
+      dot.setAttribute("data-tooltip-placement", "top");
+      svg.append(dot);
+    });
+  };
+
+  draw(rewardChart, rewards, -125, 25, [0, -50, -100], {id: "reward-title", label: "评估回报"}, {
+    id: "reward-desc",
+    label: "评估回报（越大越好）",
+    text: "15 个周期评估点的平均回报，从 -18 到 -110 波动。",
+    valuePrefix: "",
+    valueSuffix: ""
+  }, "reward-line", "reward-dot");
+
+  draw(successChart, success, -10, 110, [0, 50, 100], {id: "success-title", label: "成功率"}, {
+    id: "success-desc",
+    label: "成功率",
+    text: "15 个周期评估点的任务成功率，仅第 1 点为 50%。",
+    valuePrefix: "",
+    valueSuffix: "%"
+  }, "success-line", "success-dot");
+})();
+</script>

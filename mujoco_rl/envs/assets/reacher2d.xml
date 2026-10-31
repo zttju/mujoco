@@ -1,0 +1,38 @@
+<mujoco model="reacher2d">
+  <option timestep="0.01" gravity="0 0 -9.81" integrator="RK4"/>
+
+  <default>
+    <joint damping="0.1" armature="0.02"/>
+    <geom rgba="0.72 0.72 0.76 1" contype="0" conaffinity="0"/>
+  </default>
+
+  <worldbody>
+    <geom name="floor" type="plane" size="1 1 0.1" rgba="0.22 0.27 0.33 1"
+          contype="1" conaffinity="1"/>
+    <light pos="0 0 2" dir="0 0 -1" diffuse="0.8 0.8 0.8"/>
+
+    <geom name="base_geom" type="cylinder" pos="0 0 0.04" size="0.05 0.04" mass="0.5"/>
+
+    <body name="link1" pos="0 0 0.08">
+      <joint name="joint1" type="hinge" axis="0 0 1" range="-3.14159 3.14159"/>
+      <geom name="link1_geom" type="capsule" fromto="0 0 0 0.18 0 0"
+            size="0.025" mass="0.25"/>
+
+      <body name="link2" pos="0.18 0 0">
+        <joint name="joint2" type="hinge" axis="0 0 1" range="-3.14159 3.14159"/>
+        <geom name="link2_geom" type="capsule" fromto="0 0 0 0.16 0 0"
+              size="0.02" mass="0.15"/>
+        <site name="fingertip" pos="0.16 0 0" size="0.012" rgba="0.1 0.5 1 1"/>
+      </body>
+    </body>
+
+    <body name="target" mocap="true" pos="0.18 0 0.08">
+      <site name="target_site" type="sphere" size="0.020" rgba="1 0.25 0.25 1"/>
+    </body>
+  </worldbody>
+
+  <actuator>
+    <motor name="joint1_motor" joint="joint1" gear="2.5" ctrlrange="-1 1" ctrllimited="true"/>
+    <motor name="joint2_motor" joint="joint2" gear="1.5" ctrlrange="-1 1" ctrllimited="true"/>
+  </actuator>
+</mujoco>
